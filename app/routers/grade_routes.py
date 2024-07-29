@@ -29,6 +29,12 @@ async def submit_grade(request: Request, grade: GradeBase):
             responses={404: {"model": APIResponse[None], "description": "Subject not found"},
                        422: {"model": APIResponse[None], "description": "Validation Error"}})
 async def get_grades_by_subject(request: Request, subject_id: int):
+    if subject_id < 1:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content=APIResponse(error='Subject ID must be greater than 0').model_dump()
+        )
+
     db = request.scope['session']
     query = (
         select(Grade.grade, Grade.student_id)
@@ -55,6 +61,12 @@ async def get_grades_by_subject(request: Request, subject_id: int):
             responses={404: {"model": APIResponse[None], "description": "Student not found"},
                        422: {"model": APIResponse[None], "description": "Validation Error"}})
 async def get_grades_by_student(request: Request, student_id: int):
+    if student_id < 1:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content=APIResponse(error='Student ID must be greater than 0').model_dump()
+        )
+
     db = request.scope['session']
     query = (
         select(Grade)

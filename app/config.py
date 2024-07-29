@@ -17,6 +17,9 @@ class Config(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env")
 
+    def get_db_url(self) -> str:
+        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
 
 @lru_cache
 def get_config() -> Config:

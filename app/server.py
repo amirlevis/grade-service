@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from starlette import status
 
-from app.config import get_config
+from app.config import get_config, Config
 from app.middlewares.sqlalchemy import SQLAlchemyMiddleware
 from app.models.models import APIResponse
 from app.routers import grade_routes
@@ -22,7 +22,7 @@ def init_listeners(app_: FastAPI) -> None:
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content=jsonable_encoder(APIResponse[str](error=str(exc)))
+            content=jsonable_encoder(APIResponse[str](error=exc.errors())),
         )
 
     @app_.exception_handler(SQLAlchemyError)
@@ -56,22 +56,16 @@ def make_middleware(engine_url: str) -> List[Middleware]:
     return middleware
 
 
-def create_app() -> FastAPI:
+def create_app(configs: Config) -> FastAPI:
     app_ = FastAPI(
-        title=get_config().TITLE,
-        description=get_config().DESCRIPTION,
-        version=get_config().VERSION,
-        # dependencies=[Depends(Logging)],
-        middleware=make_middleware(engine_url=f"postgresql+asyncpg://"
-                                              f"{get_config().DB_USER}:"
-                                              f"{get_config().DB_PASSWORD}@"
-                                              f"{get_config().DB_HOST or 'localhost'}:"
-                                              f"{get_config().DB_PORT}/"
-                                              f"{get_config().DB_NAME}"),
+        title=configs.TITLE,
+        description=configs.DESCRIPTION,
+        version=configs.VERSION,
+        middleware=make_middleware(engine_url=configs.get_db_url()),
     )
     app_.include_router(grade_routes.router, prefix="/api")
     init_listeners(app_=app_)
     return app_
 
 
-app = create_app()
+app = create_app(get_config())
